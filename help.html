@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Как пользоваться конструктором карточек</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #eef2f7; padding: 20px; color: #333; line-height: 1.6; }
+.container { max-width: 850px; margin: 0 auto; background: #fff; padding: 30px 35px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+h1 { color: #0d47a1; margin-bottom: 8px; font-size: 26px; }
+h2 { color: #1565c0; margin: 25px 0 12px; font-size: 20px; }
+p { margin-bottom: 12px; }
+.step { background: #f4f6f9; border-left: 5px solid #1565c0; padding: 12px 18px; border-radius: 8px; margin-bottom: 12px; }
+.step strong { color: #0d47a1; }
+.prompt-block { background: #263238; color: #eceff1; padding: 18px 20px; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; overflow-y: auto; line-height: 1.5; }
+.copy-btn { background: #2e7d32; color: #fff; border: none; padding: 10px 24px; border-radius: 30px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; margin-bottom: 10px; }
+.copy-btn:hover { background: #1b5e20; }
+.copy-btn.copied { background: #1565c0; }
+.back-link { display: inline-block; margin-top: 20px; color: #1565c0; text-decoration: none; border-bottom: 1px dashed #1565c0; }
+.back-link:hover { color: #0d47a1; }
+.note { background: #fff8e1; border-left: 5px solid #f9a825; padding: 12px 18px; border-radius: 8px; margin: 15px 0; font-size: 14px; }
+ul, ol { margin: 8px 0 12px 22px; }
+li { margin-bottom: 5px; }
+@media (max-width: 700px) {
+    body { padding: 10px; }
+    .container { padding: 20px 16px; border-radius: 12px; }
+    h1 { font-size: 20px; }
+    h2 { font-size: 17px; }
+    .prompt-block { font-size: 12px; padding: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+    <h1>📘 Как пользоваться конструктором карточек</h1>
+    <p>Инструмент работает в 3 шага: получить задания у ИИ → вставить их в конструктор → распечатать карточки.</p>
+
+    <h2>Шаг 1. Сгенерируйте задания с помощью ИИ</h2>
+    <ol>
+        <li>Скопируйте промпт ниже (кнопка «Скопировать»).</li>
+        <li>Откройте чат с любым ИИ (ChatGPT, DeepSeek, Claude, YandexGPT и т.п.).</li>
+        <li>Вставьте промпт и заполните параметры: <strong>класс, тема, количество вариантов, количество заданий, типы заданий</strong>.</li>
+        <li>Отправьте запрос и дождитесь ответа.</li>
+    </ol>
+
+    <h2>Шаг 2. Вставьте ответ ИИ в конструктор</h2>
+    <ol>
+        <li>Откройте <a href="index.html">конструктор карточек</a>.</li>
+        <li>Заполните поля: <strong>Класс, Тема, Карточек на листе, Строк для решения</strong>.</li>
+        <li>В поле «📝 Задания» вставьте блок с заданиями (до строки «Ответы:»).</li>
+        <li>В поле «🔑 Ответы» вставьте блок с ответами (начиная со строки «Ответы:»).</li>
+        <li>Нажмите кнопку «📄 Собрать карточки».</li>
+    </ol>
+
+    <h2>Шаг 3. Распечатайте</h2>
+    <ol>
+        <li>Нажмите «🖨️ Распечатать карточки» (или Ctrl+P / Cmd+P).</li>
+        <li>В диалоге печати выберите: формат <strong>A4</strong>, поля <strong>«По умолчанию»</strong> или <strong>«Минимальные»</strong>, отключите <strong>«Колонтитулы»</strong>.</li>
+        <li>Сохраните в PDF или отправьте на печать.</li>
+    </ol>
+
+    <div class="note">
+        💡 <strong>Совет.</strong> Если работаете с телефона, используйте кнопку «Поделиться» → «Печать» в браузере.
+    </div>
+
+    <h2>📋 Промпт для ИИ (скопируйте и вставьте)</h2>
+    <button class="copy-btn" id="copyBtn">📋 Скопировать промпт</button>
+    <div class="prompt-block" id="promptText">Ты — опытный учитель математики в российской школе, хорошо знающий ФГОС и примерные образовательные программы. Мне нужны задания для печатных карточек по математике.
+
+Параметры:
+- Класс: [указать класс числом]
+- Тема: [указать тему, например, «сложение, вычитание, умножение натуральных чисел»]
+- Количество вариантов: [число]
+- Количество заданий в каждом варианте: [число]
+- Типы заданий: [указать типы заданий, например: только примеры, только уравнения, примеры и задачи и т.д.]
+
+Требования к заданиям:
+- Задания должны соответствовать возрасту и программе указанного класса.
+- Типы заданий, количество вариантов и заданий должны строго соответствовать указанным.
+- В каждом варианте должны быть задания разного уровня сложности (базовые, средние, повышенные) в рамках темы.
+- Все варианты должны быть примерно равной сложности и не повторяться.
+- Для каждого задания укажи ответ. Ответ может быть числом, выражением или кратким пояснением (например, "x = 5", "12 км/ч", "20%").
+
+Оформление формул (ВАЖНО!):
+
+1. Все математические выражения записывай с помощью LaTeX-команд БЕЗ пробелов внутри команд.
+   ✅ \frac{x}{3}+2=7
+   ❌ \frac {x} {3} + 2 = 7
+
+2. НЕ используй разделители \( ... \) и $$ ... $$ — только чистый LaTeX-код.
+   ✅ 2x+5=17
+   ❌ \(2x+5=17\)
+
+3. Если задание целиком является формулой или уравнением — пиши её как чистый LaTeX.
+
+4. Если задание содержит и текст, и формулу — формула записывается как чистый LaTeX прямо внутри текста, без разделителей.
+   ✅ Турист прошёл \frac{3}{8} маршрута. Сколько км он прошёл, если весь маршрут 40 км?
+   ✅ Вычислите: \frac{5}{7}+\frac{3}{7}
+
+5. Текстовые задачи без математических выражений пиши обычным текстом, без LaTeX.
+
+6. Не используй HTML-теги, Markdown (** или *), таблицы и другие способы форматирования.
+
+Формат вывода (строго соблюдай):
+
+Сначала выведи задания по вариантам в следующем виде:
+
+---
+Вариант 1:
+1) [задание 1]
+2) [задание 2]
+---
+Вариант 2:
+1) ...
+---
+
+После всех вариантов выведи отдельный блок с ответами. Каждый ответ должен быть на новой строке и иметь соответствующий номер задания в варианте:
+
+---
+Ответы:
+Вариант 1:
+1) x = 6;
+2) x = 5;
+Вариант 2:
+1) ...;
+2) ...;
+---
+
+Важно:
+- Все математические выражения записывай с помощью LaTeX-команд без пробелов внутри команд.
+- В ответах, если требуется пояснение, пиши после ответа в скобках.
+- Проверь, чтобы все задания были корректны и решаемы для указанного класса.
+- Не используй лишних пояснений вне указанных блоков.</div>
+
+    <a class="back-link" href="index.html">← Вернуться к конструктору</a>
+</div>
+
+<script>
+document.getElementById('copyBtn').addEventListener('click', function() {
+    const text = document.getElementById('promptText').innerText;
+    const btn = this;
+    function done() {
+        btn.textContent = '✅ Скопировано!';
+        btn.classList.add('copied');
+        setTimeout(function() {
+            btn.textContent = '📋 Скопировать промпт';
+            btn.classList.remove('copied');
+        }, 2000);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(function() { fallbackCopy(text, done); });
+    } else {
+        fallbackCopy(text, done);
+    }
+});
+function fallbackCopy(text, callback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); callback(); } catch(e) { alert('Не удалось скопировать. Выделите текст вручную и нажмите Ctrl+C.'); }
+    document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>
