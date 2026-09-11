@@ -5,7 +5,7 @@
 ## 🌐 Как открыть
 
 Перейдите по ссылке:
-**https://ваш-логин.github.io/math-cards/**
+**https://ваш-логин.github.io/math-cards/](https://annaonis.github.io/math-cards/**
 
 ## 🚀 Как пользоваться
 
