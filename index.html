@@ -43,7 +43,8 @@ h1 { color: #0d47a1; text-align: center; margin-bottom: 8px; font-size: 26px; }
 .student-line .student-class { white-space: nowrap; flex: 0 0 auto; }
 .task { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dotted #e0e0e0; }
 .task:last-of-type { border-bottom: none; }
-.task-text { font-size: 18px; font-weight: 500; color: #1a237e; padding: 2px 0; line-height: 1.4; word-wrap: break-word; }
+.task-text { font-size: 18px; font-weight: 500; color: #1a237e; padding: 2px 0; line-height: 1.45; word-wrap: break-word; }
+.task-text .katex, .key-answer .katex { font-size: 1.05em; }
 .task-solution { margin-top: 4px; padding-left: 6px; }
 .task-solution .line { height: 20px; border-bottom: 1px dashed #bdbdbd; margin-bottom: 2px; }
 .grade-field { margin-top: 10px; border-top: 2px solid #cfd8dc; padding-top: 8px; text-align: right; font-weight: 500; font-size: 14px; }
@@ -66,7 +67,6 @@ h1 { color: #0d47a1; text-align: center; margin-bottom: 8px; font-size: 26px; }
     .form-group { flex: 1 1 100%; min-width: 0; }
     .textarea-group textarea { height: 130px; font-size: 13px; }
     .btn { width: 100%; padding: 14px 20px; font-size: 16px; }
-    /* Карточки на телефоне всегда в 1 колонку */
     .cards-grid { grid-template-columns: 1fr !important; }
     .keys-grid { grid-template-columns: 1fr !important; }
     .task-text { font-size: 16px; }
@@ -145,60 +145,126 @@ h1 { color: #0d47a1; text-align: center; margin-bottom: 8px; font-size: 26px; }
 </div>
 
 <script>
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
 function normalizeSpaces(text) {
     return text
         .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, ' ')
         .replace(/\u200B/g, '');
 }
-function escapeHtml(text) {
-    return text
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function stripLeadingNumber(text) {
     return text.replace(/^(?:\d+\s*[.)]|Задание\s*\d+\s*[:.]?|Задача\s*\d+\s*[:.]?)\s*/i, '').trim();
 }
-function renderContent(text) {
-    let s = normalizeSpaces(text);
 
-    // Уже содержит явные разделители — оставляем как есть
-    if (s.indexOf('\\(') !== -1 || s.indexOf('$$') !== -1) return escapeHtml(s);
+/* ============================================================
+   ОБРАБОТКА ФОРМУЛ (подход из Конструктор_карточек.html)
+   ------------------------------------------------------------
+   Находим все LaTeX-команды, расширяем диапазон влево-вправо
+   на соседние математические символы, объединяем пересечения
+   и оборачиваем каждый диапазон в \(...\).
+   ============================================================ */
 
-    const hasBackslash = s.indexOf('\\') !== -1;
-    const hasCyrillic  = /[а-яА-ЯёЁ]/.test(s);
+// Уже готовые фрагменты математики — не трогаем
+const ALREADY_DELIMITED = [
+    /\u005c\([\s\S]*?\u005c\)/g,
+    /\u005c\[[\s\S]*?\u005c\]/g,
+    /\$\$[\s\S]*?\$\$/g,
+    /\$[^$\u000a]+?\$/g
+];
 
-    // 1. Чистая формула (только латиница/цифры/символы + LaTeX) — оборачиваем целиком
-    if (hasBackslash && !hasCyrillic) {
-        return escapeHtml('\\( ' + s.trim() + ' \\)');
-    }
+// Символы, которые могут входить в «голую» формулу вокруг \команды
+const MATH_CHAR = /[A-Za-z{}\u005c^_/0-9.,+\-*=<>()|;:%\u00B0\u22C5\u00B7\u00D7\u00F7\u00B1\u221A\u2248\u2264\u2265]/;
 
-    // 2. Смешанный текст: разбиваем по границе «кириллица / не-кириллица».
-    //    Каждый не-кириллический кусок, содержащий "\", оборачиваем в \(...\)
-    //    Это гарантирует, что \left( и \right) остаются внутри одной формулы.
-    if (hasCyrillic) {
-        const parts = s.split(/([^\u0400-\u04FF]+)/);
-        let result = '';
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            if (i % 2 === 1 && part.indexOf('\\') !== -1) {
-                result += '\\( ' + escapeHtml(part) + ' \\)';
-            } else {
-                result += escapeHtml(part);
-            }
+function mergeRanges(items) {
+    items.sort((a, b) => a.start - b.start);
+    const merged = [];
+    for (const it of items) {
+        const last = merged[merged.length - 1];
+        if (last && it.start <= last.end) {
+            last.end = Math.max(last.end, it.end);
+            last.delimited = last.delimited && it.delimited;
+        } else {
+            merged.push({ start: it.start, end: it.end, delimited: it.delimited });
         }
-        return result;
     }
-
-    // 3. Обычный текст без формул — просто экранируем
-    return escapeHtml(s);
+    return merged;
 }
+
+function trimRange(text, start, end) {
+    let s = start, e = end;
+    while (s > 0 && MATH_CHAR.test(text[s - 1])) s--;
+    while (e < text.length && MATH_CHAR.test(text[e])) e++;
+    // Отрезаем висячую пунктуацию
+    while (e > s && /[,.;:]/.test(text[e - 1])) e--;
+    // Отрезаем лишние закрывающие скобки/фигурные скобки
+    const pairs = [['(', ')'], ['{', '}']];
+    for (const [open, close] of pairs) {
+        let guard = 0;
+        while (e > s && guard++ < 5) {
+            const chunk = text.slice(s, e);
+            const closes = chunk.split(close).length - 1;
+            const opens = chunk.split(open).length - 1;
+            if (closes > opens) e--;
+            else break;
+        }
+    }
+    return [s, e];
+}
+
+function mathRanges(text) {
+    const found = [];
+    for (const re of ALREADY_DELIMITED) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) {
+            found.push({ start: m.index, end: m.index + m[0].length, delimited: true });
+        }
+    }
+    const cmdRe = /\u005c[a-zA-Z]+/g;
+    let m;
+    const overlaps = (a, b, c, d) => a < d && c < b;
+    while ((m = cmdRe.exec(text)) !== null) {
+        const start = m.index, end = m.index + m[0].length;
+        if (found.some(r => overlaps(start, end, r.start, r.end))) continue;
+        const [s, e] = trimRange(text, start, end);
+        if (e > s && !found.some(r => overlaps(s, e, r.start, r.end))) {
+            found.push({ start: s, end: e, delimited: false });
+        }
+    }
+    return mergeRanges(found);
+}
+
+function mathToHtml(text) {
+    const ranges = mathRanges(text);
+    let html = '';
+    let pos = 0;
+    for (const r of ranges) {
+        html += escapeHtml(text.slice(pos, r.start));
+        const seg = text.slice(r.start, r.end);
+        html += r.delimited ? escapeHtml(seg) : '\u005c(' + escapeHtml(seg) + '\u005c)';
+        pos = r.end;
+    }
+    return html + escapeHtml(text.slice(pos));
+}
+
+/* ============================================================
+   ПАРСИНГ
+   ============================================================ */
 function parseByVariant(text) {
     const lines = text.split('\n');
     const result = [];
     let currentVariant = null, currentItems = [];
+
     for (let raw of lines) {
         const line = normalizeSpaces(raw).trim();
         if (!line) continue;
+        // Игнорируем строку «Ответы:» — она может попасть случайно
+        if (/^Ответы\s*[:.]?\s*$/i.test(line)) continue;
+
         const varMatch = line.match(/^Вариант\s*(\d+)\s*[:.]?\s*(.*)$/i);
         if (varMatch) {
             if (currentVariant !== null) result.push({ number: currentVariant, items: currentItems.slice() });
@@ -214,8 +280,12 @@ function parseByVariant(text) {
     if (currentVariant !== null) result.push({ number: currentVariant, items: currentItems.slice() });
     return result;
 }
+
+/* ============================================================
+   ГЕНЕРАЦИЯ HTML
+   ============================================================ */
 function buildCards(variants, classText, themeText, cols, lines) {
-    let gridCols = cols === 1 ? '1fr' : (cols === 2 ? '1fr 1fr' : '1fr 1fr 1fr');
+    const gridCols = cols === 1 ? '1fr' : (cols === 2 ? '1fr 1fr' : '1fr 1fr 1fr');
     let html = '<div class="cards-grid" style="grid-template-columns:' + gridCols + ';">';
     variants.forEach(function(variant) {
         html += '<div class="card">';
@@ -228,7 +298,7 @@ function buildCards(variants, classText, themeText, cols, lines) {
         html += '</div>';
         variant.items.forEach(function(task, idx) {
             html += '<div class="task">';
-            html += '<div class="task-text">' + (idx + 1) + ') ' + renderContent(task) + '</div>';
+            html += '<div class="task-text">' + (idx + 1) + ') ' + mathToHtml(task) + '</div>';
             if (lines > 0) {
                 html += '<div class="task-solution">';
                 for (let i = 0; i < lines; i++) html += '<div class="line"></div>';
@@ -242,6 +312,7 @@ function buildCards(variants, classText, themeText, cols, lines) {
     html += '</div>';
     return html;
 }
+
 function buildKeys(answersByVariant, variants) {
     let html = '<div class="keys-section"><h2>🔑 Ответы для учителя</h2><div class="keys-grid">';
     variants.forEach(function(variant, idx) {
@@ -250,38 +321,55 @@ function buildKeys(answersByVariant, variants) {
         html += '<div class="key-item"><h4>Вариант ' + variant.number + '</h4>';
         if (answers.length === 0) html += '<div class="key-answer">—</div>';
         else answers.forEach(function(ans, i) {
-            html += '<div class="key-answer">' + (i + 1) + ') ' + renderContent(ans) + '</div>';
+            html += '<div class="key-answer">' + (i + 1) + ') ' + mathToHtml(ans) + '</div>';
         });
         html += '</div>';
     });
     html += '</div></div>';
     return html;
 }
+
+/* ============================================================
+   ОСНОВНАЯ ЛОГИКА
+   ============================================================ */
 document.getElementById('generateBtn').addEventListener('click', function() {
     const classText = document.getElementById('classInput').value.trim() || 'Класс';
     const themeText = document.getElementById('themeInput').value.trim() || '';
     const cols = parseInt(document.getElementById('colsInput').value, 10) || 2;
     let lines = parseInt(document.getElementById('linesInput').value, 10);
     if (isNaN(lines) || lines < 0) lines = 2;
+
     const tasksRaw = document.getElementById('tasksInput').value;
     const answersRaw = document.getElementById('answersInput').value;
+
     if (!tasksRaw.trim()) { alert('Пожалуйста, вставьте задания.'); return; }
+
     const variants = parseByVariant(tasksRaw);
-    if (variants.length === 0) { alert('Не удалось распознать варианты. Убедитесь, что каждый вариант начинается со строки «Вариант N:».'); return; }
+    if (variants.length === 0) {
+        alert('Не удалось распознать варианты. Убедитесь, что каждый вариант начинается со строки «Вариант N:».');
+        return;
+    }
     const answersByVariant = answersRaw.trim() ? parseByVariant(answersRaw) : [];
+
     let finalHtml = buildCards(variants, classText, themeText, cols, lines);
     if (answersByVariant.length > 0) finalHtml += buildKeys(answersByVariant, variants);
+
     document.getElementById('output').innerHTML = finalHtml;
     document.getElementById('printBtnWrapper').style.display = 'block';
+
     if (window.renderMathInElement) {
         window.renderMathInElement(document.getElementById('output'), {
             delimiters: [
-                {left: '\\(', right: '\\)', display: false},
-                {left: '$$', right: '$$', display: true}
+                { left: '\u005c(', right: '\u005c)', display: false },
+                { left: '\u005c[', right: '\u005c]', display: true },
+                { left: '$$', right: '$$', display: true },
+                { left: '$', right: '$', display: false }
             ],
-            throwOnError: false
+            throwOnError: false,
+            errorColor: '#c62828'
         });
     }
+
     document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 </script>
