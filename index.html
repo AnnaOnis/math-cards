@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Конструктор карточек по математике</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #eef2f7; padding: 20px; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; background: #fff; padding: 25px 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+h1 { color: #0d47a1; text-align: center; margin-bottom: 8px; font-size: 26px; }
+.subtitle { text-align: center; color: #666; margin-bottom: 22px; font-size: 15px; }
+.help-link { display: block; text-align: center; margin-bottom: 18px; font-size: 14px; }
+.help-link a { color: #1565c0; text-decoration: none; border-bottom: 1px dashed #1565c0; }
+.help-link a:hover { color: #0d47a1; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 20px; margin-bottom: 18px; align-items: flex-end; }
+.form-group { flex: 1 1 160px; min-width: 130px; }
+.form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #444; }
+.form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 2px solid #cfd8dc; border-radius: 8px; font-size: 15px; font-family: inherit; }
+.form-group input:focus, .form-group select:focus { border-color: #1565c0; outline: none; }
+.textarea-group { margin-bottom: 14px; }
+.textarea-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #444; }
+.textarea-group textarea { width: 100%; height: 160px; padding: 10px 12px; border: 2px solid #cfd8dc; border-radius: 8px; font-size: 14px; font-family: 'Courier New', monospace; resize: vertical; }
+.textarea-group textarea:focus { border-color: #1565c0; outline: none; }
+.hint { font-size: 12px; color: #777; margin-top: 4px; }
+.btn { background: #1565c0; color: #fff; border: none; padding: 12px 32px; border-radius: 30px; font-size: 17px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(21,101,192,0.25); font-family: inherit; }
+.btn:hover { background: #0d47a1; }
+.btn-green { background: #2e7d32; }
+.btn-green:hover { background: #1b5e20; }
+.btn-wrapper { text-align: center; margin: 18px 0; }
+
+#output { margin-top: 25px; }
+.cards-grid { display: grid; gap: 18px; margin-bottom: 20px; }
+.card { border: 2px solid #2c3e50; border-radius: 12px; padding: 14px 16px 12px; background: #fafcff; page-break-inside: avoid; break-inside: avoid; }
+.card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed #b0bec5; padding-bottom: 5px; margin-bottom: 6px; font-size: 14px; font-weight: 600; }
+.class-badge { background: #1565c0; color: #fff; padding: 1px 14px; border-radius: 30px; font-size: 12px; line-height: 22px; }
+.theme-line { font-size: 13px; color: #37474f; margin-bottom: 8px; font-style: italic; }
+.student-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid #cfd8dc; padding-bottom: 4px; margin-bottom: 10px; font-size: 13px; color: #546e7a; flex-wrap: wrap; }
+.student-line .student-name { flex: 1 1 auto; }
+.student-line .student-class { white-space: nowrap; flex: 0 0 auto; }
+.task { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dotted #e0e0e0; }
+.task:last-of-type { border-bottom: none; }
+.task-text { font-size: 18px; font-weight: 500; color: #1a237e; padding: 2px 0; line-height: 1.4; word-wrap: break-word; }
+.task-solution { margin-top: 4px; padding-left: 6px; }
+.task-solution .line { height: 20px; border-bottom: 1px dashed #bdbdbd; margin-bottom: 2px; }
+.grade-field { margin-top: 10px; border-top: 2px solid #cfd8dc; padding-top: 8px; text-align: right; font-weight: 500; font-size: 14px; }
+.grade-line { display: inline-block; border-bottom: 2px solid #000; padding: 0 24px 2px; margin-left: 8px; }
+
+.keys-section { margin-top: 35px; padding-top: 20px; border-top: 4px double #455a64; page-break-before: always; break-before: page; }
+.keys-section h2 { text-align: center; color: #b71c1c; margin-bottom: 15px; font-size: 22px; }
+.keys-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.key-item { background: #f4f6f9; padding: 10px 14px; border-radius: 8px; border-left: 5px solid #2e7d32; }
+.key-item h4 { color: #1b5e20; margin-bottom: 6px; font-size: 15px; }
+.key-answer { font-size: 15px; line-height: 1.5; margin-bottom: 2px; word-wrap: break-word; }
+
+/* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
+@media (max-width: 700px) {
+    body { padding: 10px; }
+    .container { padding: 18px 15px; border-radius: 12px; }
+    h1 { font-size: 21px; }
+    .subtitle { font-size: 13px; margin-bottom: 16px; }
+    .controls { flex-direction: column; gap: 10px; }
+    .form-group { flex: 1 1 100%; min-width: 0; }
+    .textarea-group textarea { height: 130px; font-size: 13px; }
+    .btn { width: 100%; padding: 14px 20px; font-size: 16px; }
+    /* Карточки на телефоне всегда в 1 колонку */
+    .cards-grid { grid-template-columns: 1fr !important; }
+    .keys-grid { grid-template-columns: 1fr !important; }
+    .task-text { font-size: 16px; }
+}
+
+@media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; padding: 8px; border-radius: 0; max-width: 100%; }
+    .no-print { display: none !important; }
+    .card { border: 1.5px solid #000; }
+    .class-badge { background: #000; color: #fff; }
+    .grade-line { border-bottom-color: #000; }
+    .keys-section { border-top-color: #000; }
+    .key-item { border-left-color: #000; background: #fff; border: 1px solid #999; }
+    .keys-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1 class="no-print">📐 Конструктор карточек</h1>
+    <p class="subtitle no-print">Вставьте задания и ответы из чата — получите готовые карточки для печати</p>
+    <p class="help-link no-print"><a href="help.html">❓ Как пользоваться конструктором →</a></p>
+
+    <div class="controls no-print">
+        <div class="form-group">
+            <label>Класс</label>
+            <input type="text" id="classInput" value="6 класс">
+        </div>
+        <div class="form-group">
+            <label>Тема</label>
+            <input type="text" id="themeInput" value="Действия с дробями">
+        </div>
+        <div class="form-group">
+            <label>Карточек на листе</label>
+            <select id="colsInput">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Строк для решения</label>
+            <select id="linesInput">
+                <option value="0">0</option>
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="textarea-group no-print">
+        <label>📝 Задания</label>
+        <textarea id="tasksInput" placeholder="Вариант 1:&#10;Вычислите: \frac{5}{7}+\frac{3}{7}&#10;Решите уравнение: 2x+5=17&#10;...&#10;Вариант 2:&#10;..."></textarea>
+        <div class="hint">Каждый вариант начинайте со строки «Вариант N:». Каждое задание — с новой строки. Номера 1), 2) можно не писать — они проставятся автоматически.</div>
+    </div>
+
+    <div class="textarea-group no-print">
+        <label>🔑 Ответы (ключи) — в том же порядке вариантов</label>
+        <textarea id="answersInput" placeholder="Вариант 1:&#10;\frac{8}{7}=1\frac{1}{7}&#10;x=6&#10;...&#10;Вариант 2:&#10;..."></textarea>
+        <div class="hint">Каждый ответ пишите с новой строки. Номера проставятся автоматически.</div>
+    </div>
+
+    <div class="btn-wrapper no-print">
+        <button class="btn" id="generateBtn">📄 Собрать карточки</button>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="btn-wrapper no-print" id="printBtnWrapper" style="display:none;">
+        <button class="btn btn-green" onclick="window.print()">🖨️ Распечатать карточки</button>
+    </div>
+</div>
+
+<script>
+function normalizeSpaces(text) {
+    return text
+        .replace(/[\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, ' ')
+        .replace(/\u200B/g, '');
+}
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+function stripLeadingNumber(text) {
+    return text.replace(/^(?:\d+\s*[.)]|Задание\s*\d+\s*[:.]?|Задача\s*\d+\s*[:.]?)\s*/i, '').trim();
+}
+function renderContent(text) {
+    let s = normalizeSpaces(text);
+    if (s.indexOf('\\(') !== -1 || s.indexOf('$$') !== -1) return escapeHtml(s);
+    const hasBackslash = s.indexOf('\\') !== -1;
+    const hasCyrillic  = /[а-яА-ЯёЁ]/.test(s);
+    if (hasBackslash && !hasCyrillic) return escapeHtml('\\( ' + s.trim() + ' \\)');
+    if (hasBackslash && hasCyrillic) {
+        const latexRe = /\\[a-zA-Z]+(?:\s*\{[^{}]*\})*/g;
+        let result = '', lastIndex = 0, match;
+        while ((match = latexRe.exec(s)) !== null) {
+            if (match.index > lastIndex) result += escapeHtml(s.slice(lastIndex, match.index));
+            let end = latexRe.lastIndex;
+            let fragment = s.slice(match.index, end);
+            while (end < s.length && /[0-9+\-=*/^_().,\s{}]/.test(s[end])) {
+                fragment += s[end]; end++;
+                const rest = s.slice(end);
+                const nextCmd = rest.match(/^\\[a-zA-Z]+(?:\s*\{[^{}]*\})*/);
+                if (nextCmd) { fragment += nextCmd[0]; end += nextCmd[0].length; }
+            }
+            result += '\\( ' + fragment.trim() + ' \\)';
+            lastIndex = end; latexRe.lastIndex = end;
+        }
+        if (lastIndex < s.length) result += escapeHtml(s.slice(lastIndex));
+        return result;
+    }
+    return escapeHtml(s);
+}
+function parseByVariant(text) {
+    const lines = text.split('\n');
+    const result = [];
+    let currentVariant = null, currentItems = [];
+    for (let raw of lines) {
+        const line = normalizeSpaces(raw).trim();
+        if (!line) continue;
+        const varMatch = line.match(/^Вариант\s*(\d+)\s*[:.]?\s*(.*)$/i);
+        if (varMatch) {
+            if (currentVariant !== null) result.push({ number: currentVariant, items: currentItems.slice() });
+            currentVariant = parseInt(varMatch[1], 10);
+            currentItems = [];
+            const rest = varMatch[2].trim();
+            if (rest) currentItems.push(stripLeadingNumber(rest));
+            continue;
+        }
+        if (currentVariant === null) continue;
+        currentItems.push(stripLeadingNumber(line));
+    }
+    if (currentVariant !== null) result.push({ number: currentVariant, items: currentItems.slice() });
+    return result;
+}
+function buildCards(variants, classText, themeText, cols, lines) {
+    let gridCols = cols === 1 ? '1fr' : (cols === 2 ? '1fr 1fr' : '1fr 1fr 1fr');
+    let html = '<div class="cards-grid" style="grid-template-columns:' + gridCols + ';">';
+    variants.forEach(function(variant) {
+        html += '<div class="card">';
+        html += '<div class="card-header"><span>Вариант ' + variant.number + '</span>';
+        html += '<span class="class-badge">' + escapeHtml(classText) + '</span></div>';
+        if (themeText) html += '<div class="theme-line">Тема: ' + escapeHtml(themeText) + '</div>';
+        html += '<div class="student-line">';
+        html += '<span class="student-name">Ф.И. ______________________________</span>';
+        html += '<span class="student-class">Класс: ____________</span>';
+        html += '</div>';
+        variant.items.forEach(function(task, idx) {
+            html += '<div class="task">';
+            html += '<div class="task-text">' + (idx + 1) + ') ' + renderContent(task) + '</div>';
+            if (lines > 0) {
+                html += '<div class="task-solution">';
+                for (let i = 0; i < lines; i++) html += '<div class="line"></div>';
+                html += '</div>';
+            }
+            html += '</div>';
+        });
+        html += '<div class="grade-field">Оценка: <span class="grade-line">&nbsp;</span></div>';
+        html += '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+function buildKeys(answersByVariant, variants) {
+    let html = '<div class="keys-section"><h2>🔑 Ответы для учителя</h2><div class="keys-grid">';
+    variants.forEach(function(variant, idx) {
+        const block = answersByVariant[idx];
+        const answers = block ? block.items : [];
+        html += '<div class="key-item"><h4>Вариант ' + variant.number + '</h4>';
+        if (answers.length === 0) html += '<div class="key-answer">—</div>';
+        else answers.forEach(function(ans, i) {
+            html += '<div class="key-answer">' + (i + 1) + ') ' + renderContent(ans) + '</div>';
+        });
+        html += '</div>';
+    });
+    html += '</div></div>';
+    return html;
+}
+document.getElementById('generateBtn').addEventListener('click', function() {
+    const classText = document.getElementById('classInput').value.trim() || 'Класс';
+    const themeText = document.getElementById('themeInput').value.trim() || '';
+    const cols = parseInt(document.getElementById('colsInput').value, 10) || 2;
+    let lines = parseInt(document.getElementById('linesInput').value, 10);
+    if (isNaN(lines) || lines < 0) lines = 2;
+    const tasksRaw = document.getElementById('tasksInput').value;
+    const answersRaw = document.getElementById('answersInput').value;
+    if (!tasksRaw.trim()) { alert('Пожалуйста, вставьте задания.'); return; }
+    const variants = parseByVariant(tasksRaw);
+    if (variants.length === 0) { alert('Не удалось распознать варианты. Убедитесь, что каждый вариант начинается со строки «Вариант N:».'); return; }
+    const answersByVariant = answersRaw.trim() ? parseByVariant(answersRaw) : [];
+    let finalHtml = buildCards(variants, classText, themeText, cols, lines);
+    if (answersByVariant.length > 0) finalHtml += buildKeys(answersByVariant, variants);
+    document.getElementById('output').innerHTML = finalHtml;
+    document.getElementById('printBtnWrapper').style.display = 'block';
+    if (window.renderMathInElement) {
+        window.renderMathInElement(document.getElementById('output'), {
+            delimiters: [
+                {left: '\\(', right: '\\)', display: false},
+                {left: '$$', right: '$$', display: true}
+            ],
+            throwOnError: false
+        });
+    }
+    document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+</script>
+</body>
+</html>
