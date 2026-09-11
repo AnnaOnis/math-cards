@@ -160,29 +160,36 @@ function stripLeadingNumber(text) {
 }
 function renderContent(text) {
     let s = normalizeSpaces(text);
+
+    // Уже содержит явные разделители — оставляем как есть
     if (s.indexOf('\\(') !== -1 || s.indexOf('$$') !== -1) return escapeHtml(s);
+
     const hasBackslash = s.indexOf('\\') !== -1;
     const hasCyrillic  = /[а-яА-ЯёЁ]/.test(s);
-    if (hasBackslash && !hasCyrillic) return escapeHtml('\\( ' + s.trim() + ' \\)');
-    if (hasBackslash && hasCyrillic) {
-        const latexRe = /\\[a-zA-Z]+(?:\s*\{[^{}]*\})*/g;
-        let result = '', lastIndex = 0, match;
-        while ((match = latexRe.exec(s)) !== null) {
-            if (match.index > lastIndex) result += escapeHtml(s.slice(lastIndex, match.index));
-            let end = latexRe.lastIndex;
-            let fragment = s.slice(match.index, end);
-            while (end < s.length && /[0-9+\-=*/^_().,\s{}]/.test(s[end])) {
-                fragment += s[end]; end++;
-                const rest = s.slice(end);
-                const nextCmd = rest.match(/^\\[a-zA-Z]+(?:\s*\{[^{}]*\})*/);
-                if (nextCmd) { fragment += nextCmd[0]; end += nextCmd[0].length; }
+
+    // 1. Чистая формула (только латиница/цифры/символы + LaTeX) — оборачиваем целиком
+    if (hasBackslash && !hasCyrillic) {
+        return escapeHtml('\\( ' + s.trim() + ' \\)');
+    }
+
+    // 2. Смешанный текст: разбиваем по границе «кириллица / не-кириллица».
+    //    Каждый не-кириллический кусок, содержащий "\", оборачиваем в \(...\)
+    //    Это гарантирует, что \left( и \right) остаются внутри одной формулы.
+    if (hasCyrillic) {
+        const parts = s.split(/([^\u0400-\u04FF]+)/);
+        let result = '';
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (i % 2 === 1 && part.indexOf('\\') !== -1) {
+                result += '\\( ' + escapeHtml(part) + ' \\)';
+            } else {
+                result += escapeHtml(part);
             }
-            result += '\\( ' + fragment.trim() + ' \\)';
-            lastIndex = end; latexRe.lastIndex = end;
         }
-        if (lastIndex < s.length) result += escapeHtml(s.slice(lastIndex));
         return result;
     }
+
+    // 3. Обычный текст без формул — просто экранируем
     return escapeHtml(s);
 }
 function parseByVariant(text) {
