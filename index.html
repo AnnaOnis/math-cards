@@ -337,10 +337,13 @@ function buildCards(variants, classText, themeText, cols, lines) {
         html += '<div class="card-header"><span>Вариант ' + variant.number + '</span>';
         html += '<span class="class-badge">' + escapeHtml(classText) + '</span></div>';
         if (themeText) html += '<div class="theme-line">Тема: ' + escapeHtml(themeText) + '</div>';
-        html += '<div class="student-line">';
-        html += '<span class="student-name">Ф.И. ______________________________</span>';
-        html += '<span class="student-class">Класс: ____________</span>';
-        html += '</div>';
+
+        if (lines > 0){
+            html += '<div class="student-line">';
+            html += '<span class="student-name">Ф.И. ______________________________</span>';
+            html += '<span class="student-class">Класс: ____________</span>';
+            html += '</div>';
+        }
         variant.items.forEach(function(task, idx) {
             html += '<div class="task">';
             html += '<div class="task-text">' + (idx + 1) + ') ' + mathToHtml(task) + '</div>';
@@ -351,7 +354,9 @@ function buildCards(variants, classText, themeText, cols, lines) {
             }
             html += '</div>';
         });
-        html += '<div class="grade-field">Оценка: <span class="grade-line">&nbsp;</span></div>';
+        if (lines > 0){
+            html += '<div class="grade-field">Оценка: <span class="grade-line">&nbsp;</span></div>';
+        }
         html += '</div>';
     });
     html += '</div>';
