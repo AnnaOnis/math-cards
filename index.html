@@ -185,7 +185,7 @@ h1 { color: #0d47a1; text-align: center; margin-bottom: 8px; font-size: 26px; }
     <div id="output"></div>
 
     <div class="btn-wrapper no-print" id="printBtnWrapper" style="display:none;">
-        <button class="btn btn-green" onclick="window.print()">🖨️ Распечатать карточки</button>
+        <button class="btn btn-green" id="printBtn">🖨️ Распечатать карточки</button>
     </div>
 </div>
 
@@ -422,6 +422,56 @@ document.getElementById('generateBtn').addEventListener('click', function() {
 
     document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+    /* ============================================================
+   ПЕЧАТЬ С ИМЕНЕМ ФАЙЛА ИЗ ТЕМЫ
+   ============================================================ */
+
+function sanitizeFilename(name) {
+    return String(name || '')
+        // убираем запрещённые в именах файлов символы
+        .replace(/[\\/:*?"<>|\u0000-\u001F]/g, '')
+        // пробелы и подчёркивания → одинарное подчёркивание
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        // убираем подчёркивания по краям
+        .replace(/^_+|_+$/g, '');
+}
+
+function printWithFilename() {
+    const themeText = document.getElementById('themeInput').value.trim();
+    const classText = document.getElementById('classInput').value.trim();
+
+    // Базовое имя: тема (+ класс), иначе — запасное
+    let base;
+    if (themeText) {
+        base = themeText;
+        if (classText) base = base + '_' + classText;
+    } else {
+        base = 'карточки_по_математике';
+    }
+    const safe = sanitizeFilename(base) || 'карточки_по_математике';
+
+    // Запоминаем исходный заголовок
+    const originalTitle = document.title;
+    document.title = safe;
+
+    // Вернём заголовок после закрытия диалога печати
+    let restored = false;
+    const restore = function() {
+        if (restored) return;
+        restored = true;
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    // Резервная страховка, если afterprint не сработает
+    setTimeout(restore, 60000);
+
+    window.print();
+}
+
+// Подключаем к кнопке
+document.getElementById('printBtn').addEventListener('click', printWithFilename);
 </script>
 </body>
 </html>
