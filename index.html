@@ -400,6 +400,11 @@ document.getElementById('generateBtn').addEventListener('click', function() {
     let finalHtml = buildCards(variants, classText, themeText, cols, lines);
     if (answersByVariant.length > 0) finalHtml += buildKeys(answersByVariant, variants);
 
+    // ← НОВОЕ: устанавливаем CSS-переменные для печати
+    document.documentElement.style.setProperty('--print-cols', cols);
+    const cardMinHeight = cols === 1 ? '270mm' : cols === 2 ? '130mm' : '85mm';
+    document.documentElement.style.setProperty('--card-min-height', cardMinHeight);
+
     document.getElementById('output').innerHTML = finalHtml;
     document.getElementById('printBtnWrapper').style.display = 'block';
 
